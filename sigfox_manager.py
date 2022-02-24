@@ -1,4 +1,6 @@
 from base64 import b64encode
+from datetime import datetime
+from typing import Optional
 
 import requests
 import json
@@ -71,10 +73,24 @@ class SigfoxManager:
 
 		return data
 
-	def get_device_messages(self, dev_id):
-		msgs_url = f"https://api.sigfox.com/v2/devices/{dev_id}/messages"
+	def get_device_messages(self, dev_id: str, threshold: Optional[int] = None):
+		if threshold is None:
+			msgs_url = f"https://api.sigfox.com/v2/devices/{dev_id}/messages"
+		else:
+			msgs_url = f"https://api.sigfox.com/v2/devices/{dev_id}/messages?since={threshold}"
 
 		resp = self.do_get(msgs_url)
+		data = json.loads(resp.text)
+		if resp.status_code == 200:
+			data["status"] = "success"
+		else:
+			data["status"] = "error"
+
+		return data
+
+	def get_device_message_number(self, dev_id):
+		metric_url = f"https://api.sigfox.com/v2/devices/{dev_id}/messages/metric"
+		resp = self.do_get(metric_url)
 		data = json.loads(resp.text)
 		if resp.status_code == 200:
 			data["status"] = "success"
