@@ -1,5 +1,4 @@
 from base64 import b64encode
-from datetime import datetime
 from typing import Optional
 
 import requests
