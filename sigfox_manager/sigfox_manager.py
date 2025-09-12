@@ -27,10 +27,11 @@ class SigfoxManager:
         self.auth = b64encode(f"{self.user}:{self.pwd}".encode("utf-8")).decode("ascii")
         self.devs_page = None
 
-    def get_contracts(self) -> ContractsResponse:
+    def get_contracts(self, fetch_all_pages: bool = True) -> ContractsResponse:
         """
         Get all contracts from Sigfox API the user can see
-        :return:
+        :param fetch_all_pages: if True, fetches all pages automatically; if False, returns only first page
+        :return: ContractsResponse object containing all contracts
         """
         contract_url = "https://api.sigfox.com/v2/contract-infos/"
 
@@ -41,12 +42,39 @@ class SigfoxManager:
             )
 
         data = json.loads(resp.text)
-        return ContractsResponse(**data)
+        contracts_response = ContractsResponse(**data)
+        
+        # If pagination is enabled and there are more pages, fetch them all
+        if fetch_all_pages and contracts_response.paging and contracts_response.paging.next:
+            all_contracts = list(contracts_response.data)
+            current_page = contracts_response
+            
+            while current_page.paging and current_page.paging.next:
+                # Extract the next page URL
+                next_url = current_page.paging.next
+                
+                resp = do_get(next_url, self.auth.encode("utf-8"))
+                
+                if resp.status_code != 200:
+                    # If we can't get a page, break and return what we have
+                    break
+                    
+                data = json.loads(resp.text)
+                current_page = ContractsResponse(**data)
+                all_contracts.extend(current_page.data)
+            
+            # Create a new response with all contracts and clear pagination
+            from .models.schemas import Paging
+            contracts_response.data = all_contracts
+            contracts_response.paging = Paging(next=None)
 
-    def get_devices_by_contract(self, contract_id: str) -> DevicesResponse:
+        return contracts_response
+
+    def get_devices_by_contract(self, contract_id: str, fetch_all_pages: bool = True) -> DevicesResponse:
         """
         Get all the devices associated with a contract ID
         :param contract_id: string containing the contract ID to search for
+        :param fetch_all_pages: if True, fetches all pages automatically; if False, returns only first page
         :return: DevicesResponse object containing the information for all the devices associated with the contract
         """
         devs_url = f"https://api.sigfox.com/v2/contract-infos/{contract_id}/devices"
@@ -58,6 +86,30 @@ class SigfoxManager:
 
         data = json.loads(resp.text)
         devices_response = DevicesResponse(**data)
+        
+        # If pagination is enabled and there are more pages, fetch them all
+        if fetch_all_pages and devices_response.paging and devices_response.paging.next:
+            all_devices = list(devices_response.data)
+            current_page = devices_response
+            
+            while current_page.paging and current_page.paging.next:
+                # Extract the next page URL
+                next_url = current_page.paging.next
+                
+                resp = do_get(next_url, self.auth.encode("utf-8"))
+                
+                if resp.status_code != 200:
+                    # If we can't get a page, break and return what we have
+                    break
+                    
+                data = json.loads(resp.text)
+                current_page = DevicesResponse(**data)
+                all_devices.extend(current_page.data)
+            
+            # Create a new response with all devices and clear pagination
+            from .models.schemas import Paging
+            devices_response.data = all_devices
+            devices_response.paging = Paging(next=None)
 
         return devices_response
 
