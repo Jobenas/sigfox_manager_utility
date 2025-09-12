@@ -31,7 +31,7 @@ from .sigfox_manager_exceptions.sigfox_exceptions import (
 __all__ = [
     "SigfoxManager",
     "ContractsResponse",
-    "DevicesResponse", 
+    "DevicesResponse",
     "Device",
     "DeviceMessagesResponse",
     "DeviceMessageStats",

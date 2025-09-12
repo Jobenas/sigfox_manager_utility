@@ -4,16 +4,21 @@
 from setuptools import setup, find_packages
 import os
 
+
 # Read the README file for long description
 def read_readme():
     with open("README.md", "r", encoding="utf-8") as fh:
         return fh.read()
 
+
 # Read requirements from requirements.txt
 def read_requirements():
     req_path = os.path.join(os.path.dirname(__file__), "requirements.txt")
     with open(req_path, "r", encoding="utf-8") as fh:
-        return [line.strip() for line in fh if line.strip() and not line.startswith("#")]
+        return [
+            line.strip() for line in fh if line.strip() and not line.startswith("#")
+        ]
+
 
 setup(
     name="sigfox-manager",
