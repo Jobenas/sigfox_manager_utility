@@ -1,3 +1,4 @@
+.gitignore
 LICENSE
 MANIFEST.in
 README.md
@@ -6,6 +7,8 @@ pyproject.toml
 requirements-dev.txt
 requirements.txt
 setup.py
+dist/sigfox_manager-0.1.0-py3-none-any.whl
+dist/sigfox_manager-0.1.0.tar.gz
 sigfox_manager/__init__.py
 sigfox_manager/sigfox_manager.py
 sigfox_manager.egg-info/PKG-INFO

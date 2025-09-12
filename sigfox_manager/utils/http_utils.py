@@ -11,7 +11,7 @@ def do_get(url: str, auth: bytes) -> requests.Response:
     :return: requests.Response object
     """
     payload = {}
-    headers = {"Authorization": f"Basic {auth}"}
+    headers = {"Authorization": f"Basic {auth.decode('utf-8')}"}
     response = requests.get(url, headers=headers, data=payload)
 
     return response
@@ -29,9 +29,9 @@ def do_post(
     :return: requests.Response object
     """
     if headers is None:
-        headers = {"Authorization": f"Basic {auth}"}
+        headers = {"Authorization": f"Basic {auth.decode('utf-8')}"}
     else:
-        headers["Authorization"] = f"Basic {auth}"
+        headers["Authorization"] = f"Basic {auth.decode('utf-8')}"
 
     payload_dict = json.dumps(payload)
 

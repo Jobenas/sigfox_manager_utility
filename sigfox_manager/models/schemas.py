@@ -5,7 +5,7 @@ from typing import List, Optional, Dict, Any
 
 class Option(BaseModel):
     id: str
-    parameters: Dict[str, Any]
+    parameters: Optional[Dict[str, Any]] = None
 
 
 class Group(BaseModel):
@@ -125,11 +125,11 @@ class Device(BaseModel):
     location: Location
     lastComputedLocation: Optional[LastComputedLocation] = None
     pac: str
-    sequenceNumber: int
+    sequenceNumber: Optional[int] = None
     trashSequenceNumber: Optional[int] = None
-    lastCom: int
+    lastCom: Optional[int] = None
     lqi: int
-    activationTime: int
+    activationTime: Optional[int] = None
     creationTime: int
     state: int
     comState: int

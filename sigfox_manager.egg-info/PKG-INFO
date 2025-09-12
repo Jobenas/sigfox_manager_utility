@@ -1,10 +1,10 @@
 Metadata-Version: 2.4
 Name: sigfox-manager
-Version: 0.1.0
+Version: 0.1.1
 Summary: A Python library for handling Sigfox API operations
 Home-page: https://github.com/Jobenas/sigfox_manager_utility
-Author: Your Name
-Author-email: Your Name <your.email@example.com>
+Author: Jorge Benavides Aspiazu
+Author-email: Jorge Benavides Aspiazu <jobenas@gmail.com>
 License: MIT License
         
         Copyright (c) 2025 Your Name

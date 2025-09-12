@@ -5,7 +5,7 @@ This library provides a simple interface to interact with the Sigfox API,
 allowing you to manage devices, contracts, and messages.
 """
 
-__version__ = "0.1.0"
+__version__ = "0.1.1"
 __author__ = "Your Name"
 __email__ = "your.email@example.com"
 
