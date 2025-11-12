@@ -73,6 +73,9 @@ Currently supports the following operations:
 - Get device information
 - Get messages from device
 - Create device
+- List device types with automatic pagination
+- Resolve device types by id or name
+- Provision devices with input validation
 
 ## Installation
 
@@ -124,6 +127,34 @@ if devices.data:
     print(f"Found {len(messages.data)} messages")
 ```
 
+## Device Type Management and Provisioning
+
+The library now includes enhanced features for managing device types and provisioning devices with validation:
+
+```python
+from sigfox_manager import SigfoxManager
+
+# Initialize the manager
+sm = SigfoxManager("API_LOGIN", "API_PASSWORD")
+
+# List all device types
+dts = sm.get_device_types().data
+print([(dt.id, dt.name) for dt in dts])
+
+# Provision a new device with validation
+# - Validates dev_id format (uppercase hex, 3-16 chars)
+# - Validates pac format (16 alphanumeric chars)
+# - Resolves device type by id or name
+dev = sm.provision_device(
+    dev_id="19C3B",
+    pac="1234567890ABCDEF",
+    dev_type_ref="Type A",  # Can be device type id or name
+    name="field-node-42",
+    automatic_renewal=True,
+)
+print(dev.id, dev.name)
+```
+
 ## API Reference
 
 ### SigfoxManager
@@ -137,11 +168,15 @@ SigfoxManager(user: str, pwd: str)
 
 #### Methods
 
-- `get_contracts() -> ContractsResponse`: Get all contracts visible to the user
-- `get_devices(contract_id: str) -> DevicesResponse`: Get all devices for a contract
-- `get_device(device_id: str) -> Device`: Get detailed information about a specific device
-- `get_device_messages(device_id: str) -> DeviceMessagesResponse`: Get messages from a device
-- `create_device(device_data: BaseDevice) -> Device`: Create a new device
+- `get_contracts(fetch_all_pages: bool = True) -> ContractsResponse`: Get all contracts visible to the user
+- `get_devices_by_contract(contract_id: str, fetch_all_pages: bool = True) -> DevicesResponse`: Get all devices for a contract
+- `get_device_info(device_id: str) -> Device`: Get detailed information about a specific device
+- `get_device_messages(device_id: str, threshold: Optional[int] = None) -> DeviceMessagesResponse`: Get messages from a device
+- `get_device_message_number(device_id: str) -> DeviceMessageStats`: Get message metrics for a device
+- `create_device(dev_id, pac, dev_type_id, name, ...) -> BaseDevice`: Create a new device
+- `get_device_types(fetch_all_pages: bool = True) -> DeviceTypesResponse`: Get all device types with pagination support
+- `resolve_device_type_id(ref: str) -> str`: Resolve a device type reference (id or name) to its id
+- `provision_device(dev_id: str, pac: str, dev_type_ref: str, name: Optional[str] = None, **kwargs) -> BaseDevice`: Validate inputs and provision a new device
 
 ### Exceptions
 
@@ -151,6 +186,7 @@ The library provides custom exceptions for better error handling:
 - `SigfoxDeviceNotFoundError`: Raised when a device is not found
 - `SigfoxAuthError`: Raised for authentication errors
 - `SigfoxDeviceCreateConflictException`: Raised when trying to create a duplicate device
+- `SigfoxDeviceTypeNotFoundException`: Raised when a device type cannot be resolved by id or name
 
 ## Development
 

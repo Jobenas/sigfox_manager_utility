@@ -150,6 +150,11 @@ class DevicesResponse(BaseModel):
     paging: Paging
 
 
+class DeviceTypesResponse(BaseModel):
+    data: List[DeviceType]
+    paging: Paging
+
+
 class BaseDevice(BaseModel):
     id: str
 
