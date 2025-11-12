@@ -8,12 +8,7 @@ pyproject.toml
 requirements-dev.txt
 requirements.txt
 setup.py
-dist/sigfox_manager-0.1.0-py3-none-any.whl
-dist/sigfox_manager-0.1.0.tar.gz
-dist/sigfox_manager-0.1.1-py3-none-any.whl
-dist/sigfox_manager-0.1.1.tar.gz
-dist/sigfox_manager-0.2.0-py3-none-any.whl
-dist/sigfox_manager-0.2.0.tar.gz
+uv.lock
 sigfox_manager/__init__.py
 sigfox_manager/sigfox_manager.py
 sigfox_manager.egg-info/PKG-INFO

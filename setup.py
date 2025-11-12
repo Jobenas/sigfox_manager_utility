@@ -22,7 +22,7 @@ def read_requirements():
 
 setup(
     name="sigfox-manager",
-    version="0.2.0",
+    version="0.3.0",
     author="Jorge Benavides Aspiazu",  # Update with your name
     author_email="jobenas@gmail.com",  # Update with your email
     description="A Python library for handling Sigfox API operations",
