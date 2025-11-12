@@ -1,5 +1,6 @@
 from base64 import b64encode
 from typing import Optional
+import re
 
 import json
 
@@ -10,12 +11,14 @@ from sigfox_manager.models.schemas import (
     DeviceMessagesResponse,
     DeviceMessageStats,
     BaseDevice,
+    DeviceTypesResponse,
 )
 from sigfox_manager.sigfox_manager_exceptions.sigfox_exceptions import (
     SigfoxAPIException,
     SigfoxDeviceNotFoundError,
     SigfoxAuthError,
     SigfoxDeviceCreateConflictException,
+    SigfoxDeviceTypeNotFoundException,
 )
 from sigfox_manager.utils.http_utils import do_get, do_post
 
@@ -241,3 +244,147 @@ class SigfoxManager:
         base_device = BaseDevice(**data)
 
         return base_device
+
+    def get_device_types(self, fetch_all_pages: bool = True) -> DeviceTypesResponse:
+        """
+        GET /v2/devicetypes
+        - When fetch_all_pages=True, follow paging.next and merge all pages,
+          returning a DeviceTypesResponse with paging.next=None and full data list.
+        - Map 403 -> SigfoxAuthError; re-raise other HTTP errors consistently with existing style.
+        :param fetch_all_pages: if True, fetches all pages automatically; if False, returns only first page
+        :return: DeviceTypesResponse object containing all device types
+        """
+        device_types_url = "https://api.sigfox.com/v2/devicetypes"
+
+        resp = do_get(device_types_url, self.auth.encode("utf-8"))
+        
+        if resp.status_code == 403:
+            raise SigfoxAuthError
+        elif resp.status_code != 200:
+            raise SigfoxAPIException(
+                status_code=resp.status_code, message="Failed to fetch device types."
+            )
+
+        data = json.loads(resp.text)
+        device_types_response = DeviceTypesResponse(**data)
+        
+        # If pagination is enabled and there are more pages, fetch them all
+        if fetch_all_pages and device_types_response.paging and device_types_response.paging.next:
+            all_device_types = list(device_types_response.data)
+            current_page = device_types_response
+            
+            while current_page.paging and current_page.paging.next:
+                # Extract the next page URL
+                next_url = current_page.paging.next
+                
+                resp = do_get(next_url, self.auth.encode("utf-8"))
+                
+                if resp.status_code == 403:
+                    raise SigfoxAuthError
+                elif resp.status_code != 200:
+                    # If we can't get a page, break and return what we have
+                    break
+                    
+                data = json.loads(resp.text)
+                current_page = DeviceTypesResponse(**data)
+                all_device_types.extend(current_page.data)
+            
+            # Create a new response with all device types and clear pagination
+            from .models.schemas import Paging
+            device_types_response.data = all_device_types
+            device_types_response.paging = Paging(next=None)
+
+        return device_types_response
+
+    def resolve_device_type_id(self, ref: str) -> str:
+        """
+        Resolve a device type reference to its id.
+        - If `ref` looks like an id (hex-ish / UUID-like), check existence among device types; return it if present.
+        - Else treat `ref` as a name (exact, case-sensitive match) and return the id.
+        - Raise SigfoxDeviceTypeNotFoundException if not found.
+        - Uses get_device_types(fetch_all_pages=True) to obtain the catalog.
+        :param ref: Device type id or name to resolve
+        :return: Device type id
+        :raises SigfoxDeviceTypeNotFoundException: if device type cannot be resolved
+        """
+        device_types_response = self.get_device_types(fetch_all_pages=True)
+        device_types = device_types_response.data
+        
+        # First, try to match by id (exact match)
+        for dt in device_types:
+            if dt.id and dt.id == ref:
+                return dt.id
+        
+        # If not found by id, try to match by name (exact, case-sensitive)
+        for dt in device_types:
+            if dt.name == ref and dt.id:
+                return dt.id
+        
+        # If still not found, raise exception
+        raise SigfoxDeviceTypeNotFoundException(
+            f"Device type not found: {ref}"
+        )
+
+    def provision_device(
+        self,
+        dev_id: str,
+        pac: str,
+        dev_type_ref: str,
+        name: Optional[str] = None,
+        **kwargs
+    ) -> BaseDevice:
+        """
+        Validate inputs, resolve device type, and call create_device.
+        Validation:
+          - dev_id: uppercase hex (3..16 chars) — raise ValueError if invalid
+          - pac: 16-char alphanumeric — raise ValueError if invalid
+          - dev_type_ref: resolve via resolve_device_type_id(); raise SigfoxDeviceTypeNotFoundException on failure
+        Then delegate to existing create_device(...), passing dev_type_id and optional kwargs (e.g., prototype, automatic_renewal, lat/lng).
+        Returns BaseDevice.
+        :param dev_id: Sigfox device ID (uppercase hex, 3-16 chars)
+        :param pac: PAC code (16-char alphanumeric)
+        :param dev_type_ref: Device type id or name
+        :param name: Optional device name
+        :param kwargs: Additional parameters to pass to create_device (prototype, automatic_renewal, lat, lng, etc.)
+        :return: BaseDevice object
+        :raises ValueError: if dev_id or pac format is invalid
+        :raises SigfoxDeviceTypeNotFoundException: if device type cannot be resolved
+        """
+        # Validate dev_id: uppercase hex (3..16 chars)
+        dev_id_pattern = re.compile(r'^[0-9A-F]{3,16}$')
+        if not dev_id_pattern.match(dev_id):
+            raise ValueError(
+                f"Invalid dev_id format: {dev_id}. Must be uppercase hex, 3-16 characters."
+            )
+        
+        # Validate pac: 16-char alphanumeric
+        pac_pattern = re.compile(r'^[0-9A-Za-z]{16}$')
+        if not pac_pattern.match(pac):
+            raise ValueError(
+                f"Invalid pac format: {pac}. Must be 16 alphanumeric characters."
+            )
+        
+        # Resolve device type
+        dev_type_id = self.resolve_device_type_id(dev_type_ref)
+        
+        # Extract known parameters from kwargs or use defaults
+        activable = kwargs.pop('activable', True)
+        lat = kwargs.pop('lat', 0.0)
+        lng = kwargs.pop('lng', 0.0)
+        product_cert = kwargs.pop('product_cert', None)
+        prototype = kwargs.pop('prototype', False)
+        automatic_renewal = kwargs.pop('automatic_renewal', True)
+        
+        # Call create_device with resolved parameters
+        return self.create_device(
+            dev_id=dev_id,
+            pac=pac,
+            dev_type_id=dev_type_id,
+            name=name if name else dev_id,  # Use dev_id as name if not provided
+            activable=activable,
+            lat=lat,
+            lng=lng,
+            product_cert=product_cert,
+            prototype=prototype,
+            automatic_renewal=automatic_renewal
+        )

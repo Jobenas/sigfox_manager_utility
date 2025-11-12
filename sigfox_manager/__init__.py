@@ -19,12 +19,15 @@ from .models.schemas import (
     DeviceMessageStats,
     BaseDevice,
     ErrorResponse,
+    DeviceType,
+    DeviceTypesResponse,
 )
 from .sigfox_manager_exceptions.sigfox_exceptions import (
     SigfoxAPIException,
     SigfoxDeviceNotFoundError,
     SigfoxAuthError,
     SigfoxDeviceCreateConflictException,
+    SigfoxDeviceTypeNotFoundException,
 )
 
 # Define what gets imported with "from sigfox_manager import *"
@@ -37,8 +40,11 @@ __all__ = [
     "DeviceMessageStats",
     "BaseDevice",
     "ErrorResponse",
+    "DeviceType",
+    "DeviceTypesResponse",
     "SigfoxAPIException",
     "SigfoxDeviceNotFoundError",
     "SigfoxAuthError",
     "SigfoxDeviceCreateConflictException",
+    "SigfoxDeviceTypeNotFoundException",
 ]

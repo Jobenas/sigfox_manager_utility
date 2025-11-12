@@ -24,6 +24,10 @@ class SigfoxDeviceNotFoundError(SigfoxAPIException):
 
 class SigfoxDeviceCreateConflictException(SigfoxAPIException):
     def __init__(
-        selfself, message="A conflict happened with the current state of the resource."
+        self, message="A conflict happened with the current state of the resource."
     ):
         super().__init__(409, message)
+
+
+class SigfoxDeviceTypeNotFoundException(Exception):
+    """Raised when a device type cannot be resolved by id or name."""
