@@ -193,14 +193,14 @@ class CBStatus(BaseModel):
 class Rinfo(BaseModel):
     baseStation: BaseStation
     rssi: str
-    rssiRepeaters: str
-    lat: str
-    lng: str
+    rssiRepeaters: Optional[str] = None
+    lat: Optional[str] = None
+    lng: Optional[str] = None
     freq: float
-    freqRepeaters: str
-    rep: int
-    repetitions: List[Repetition]
-    cbStatus: CBStatus
+    freqRepeaters: Optional[str] = None
+    rep: Optional[int] = None
+    repetitions: Optional[List[Repetition]] = None
+    cbStatus: Optional[CBStatus] = None
 
 
 class DownlinkAckInfo(BaseModel):
